@@ -16,13 +16,15 @@ namespace Eve_SSO_Native
         // in a real application, you should get the accessToken from a database or other storage, not by parameter
         public static async Task GetIndustryJobs(AccessToken accessToken)
         {
+            // CHARACTER:EVE:12345678  <-- Get this last part
             var characterId = accessToken.WebToken.Subject.Split(':')[2];
             var url = ApiUrlBase + $"characters/{characterId}/industry/jobs/";
             var request = new HttpRequestMessage(HttpMethod.Get, url);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.WebToken.EncodedToken);
 
             var result = await Client.SendAsync(request);
-            result.EnsureSuccessStatusCode();
+            var data = await result.Content.ReadAsStringAsync();
+            Console.WriteLine(data);
         }
     }
 }

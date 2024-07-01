@@ -3,6 +3,8 @@ using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Mime;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -166,6 +168,36 @@ namespace Eve_SSO_Native
                 {
                     { "IsValid", validation.IsValid.ToString() },
                     { "Exception", validation.Exception?.Message ?? string.Empty }
+                };
+            }
+        }
+
+        public static async Task<AccessToken> RefreshAccessToken(AccessToken accessToken)
+        {
+            var url = "https://login.eveonline.com/v2/oauth/token";
+
+            var body = new Dictionary<string, string>()
+            {
+                { "grant_type", "refresh_token" },
+                { "refresh_token", accessToken.RefreshToken },
+                { "client_id", clientId }
+            };
+
+            var content = new FormUrlEncodedContent(body);
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+
+            using (var client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Host = "login.eveonline.com";
+                var result = await client.PostAsync(url, content);
+                Console.WriteLine(await result.Content.ReadAsStringAsync());
+                var token = JsonSerializer.Deserialize<AccessTokenResponse>(await result.Content.ReadAsStringAsync());
+                result.EnsureSuccessStatusCode();
+
+                return new AccessToken()
+                {
+                    WebToken = new JsonWebToken(token.AccessToken),
+                    RefreshToken = token.RefreshToken
                 };
             }
         }
